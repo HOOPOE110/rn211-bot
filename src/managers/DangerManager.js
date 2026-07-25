@@ -5,7 +5,7 @@ class DangerManager {
         this.bot = bot;
         this.sellManager = sellManager;
 
-        this.radius = 10;
+        this.radius = 57;
 
         this.disconnected = false;
 
@@ -73,10 +73,7 @@ class DangerManager {
         this.sellManager.stop();
 
 
-        // disconnect
-        this.bot.quit(
-            "Danger detected"
-        );
+        this.bot._client.end();
 
     }
 

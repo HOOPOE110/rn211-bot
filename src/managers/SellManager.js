@@ -8,6 +8,8 @@ class SellManager {
         this.running = false;
         this.state = "IDLE";
 
+        this.sellCount = 0;
+
         this.nextClick = 0;
     }
 
@@ -107,15 +109,15 @@ class SellManager {
 
 
         // Count used sell slots
-        let usedSlots = 0;
+        // let usedSlots = 0;
 
-        for (let i = 0; i <= 44; i++) {
+        // for (let i = 0; i <= 44; i++) {
 
-            if (this.window.slots[i]) {
-                usedSlots++;
-            }
+        //     if (this.window.slots[i]) {
+        //         usedSlots++;
+        //     }
 
-        }
+        // }
 
 
         // console.log(
@@ -126,15 +128,15 @@ class SellManager {
 
 
         // Sell area full
-        if (usedSlots >= 35) {
+        // if (usedSlots >= 52) {
 
-            // console.log("Sell area full");
+        //     // console.log("Sell area full");
 
-            this.state = "CLICK_BUTTON";
+        //     this.state = "CLICK_BUTTON";
 
-            return;
+        //     return;
 
-        }
+        // }
 
 
         // Find first inventory item
@@ -148,30 +150,33 @@ class SellManager {
 
             const item = window.slots[i];
 
-            if (item) {
+            // if (item) {
 
-                // console.log(
-                //     "Moving:",
-                //     item.name,
-                //     "from",
-                //     i
-                // );
-
-
-                this.bot.clickWindow(
-                    i,
-                    0,
-                    1
-                );
-
-                // this.nextClick = Date.now() + 50;
+            // console.log(
+            //     "Moving:",
+            //     item.name,
+            //     "from",
+            //     i
+            // );
 
 
-                return;
+            this.bot.clickWindow(
+                i,
+                0,
+                1
+            );
 
-            }
+            
+
+
+
+
+            // }
 
         }
+        this.nextClick = Date.now() + 200;
+        this.state = "CLICK_BUTTON";
+        return;
 
     }
 
@@ -262,7 +267,9 @@ class SellManager {
             0
         );
 
-        this.nextClick = Date.now() + 100;
+        this.sellCount++;
+
+        // this.nextClick = Date.now() + 100;
         // this.state = "WAIT_SELL";
         this.state = "MOVE_ITEMS";
 
