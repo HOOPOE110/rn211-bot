@@ -1,199 +1,313 @@
-package com.ali.rn211.client;
+class SellManager {
 
-import org.lwjgl.glfw.GLFW;
+    constructor(bot, positionManager) {
+        this.bot = bot;
 
-import com.mojang.blaze3d.platform.InputConstants;
+        this.positionManager = positionManager;
 
-import net.minecraft.client.Minecraft;
-// import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.ContainerScreen;
-import net.minecraft.world.inventory.ClickType;
+        this.running = false;
+        this.state = "IDLE";
 
-public class SellManager {
-
-    // private static final int SELL_START = 0;
-    // private static final int SELL_END = 44;
-
-    private static final int SELL_BUTTON = 53;
-
-    private static final int INVENTORY_START = 54;
-    private static final int INVENTORY_END = 89;
-
-    private static boolean selling = false;
-    private static long nextActionTime = 0;
-
-    // private static void setShift(boolean pressed) {
-
-    //     Minecraft client = Minecraft.getInstance();
-
-    //     client.options.keyShift.setDown(pressed);
-
-    // }
-
-    // private static void testShiftDoubleClick(Minecraft client) {
-
-    //     var menu = client.player.containerMenu;
-
-    //     setShift(true);
-
-    //     client.gameMode.handleInventoryMouseClick(
-    //             menu.containerId,
-    //             55,
-    //             0,
-    //             ClickType.PICKUP,
-    //             client.player);
-
-    //     client.gameMode.handleInventoryMouseClick(
-    //             menu.containerId,
-    //             56,
-    //             0,
-    //             ClickType.PICKUP,
-    //             client.player);
-
-    //     client.gameMode.handleInventoryMouseClick(
-    //             menu.containerId,
-    //             56,
-    //             0,
-    //             ClickType.PICKUP,
-    //             client.player);
-
-    //     setShift(false);
-
-    // }
-
-    public static void tick(Minecraft client) {
-
-        if (!(client.screen instanceof ContainerScreen screen))
-            return;
-
-        if (!screen.getTitle().getString().equals("Sell"))
-            return;
-
-        if (client.player == null || client.gameMode == null) {
-            return;
-        }
-
-        long now = System.currentTimeMillis();
-
-        if (now < nextActionTime) {
-        return;
-        }
-
-        var menu = screen.getMenu();
-
-        // Move inventory items to sell slots
-        if (!selling) {
-
-        for (int slot = INVENTORY_START; slot <= INVENTORY_END; slot++) {
-
-        // if (!menu.slots.get(slot).getItem().isEmpty()) {
-
-        client.gameMode.handleInventoryMouseClick(
-        menu.containerId,
-        slot,
-        0,
-        ClickType.QUICK_MOVE,
-        client.player);
-
-        // nextActionTime = now + 200;
-        // return;
-        // }
-        }
-        // nextActionTime = now + 500;
-        // if (now >= nextActionTime) {
-        // No items left, ready to sell
-        selling = true;
-        // nextActionTime = now + 500;
-        // return;
-        // }
-
-        }
-
-        // Click sell button
-        if (selling) {
-
-        client.gameMode.handleInventoryMouseClick(
-        menu.containerId,
-        SELL_BUTTON,
-        0,
-        ClickType.PICKUP,
-        client.player);
-
-        selling = false;
-        // nextActionTime = now + 3000;
-        }
-
-        // if (!selling) {
-
-        //     testShiftDoubleClick(client);
-
-        //     selling = true;
-
-        // }
+        this.nextClick = 0;
     }
+
+    start() {
+        this.running = true;
+        this.state = "OPEN_MENU";
+    }
+
+    stop() {
+        this.running = false;
+        this.state = "IDLE";
+    }
+
+
+    tick() {
+
+        if (!this.positionManager.isSafe()) {
+            console.log("isSafe=false")
+            return;
+        }
+
+
+        if (!this.bot.player || !this.bot.entity)
+            return;
+
+        if (!this.bot.currentWindow && this.state === "OPEN_MENU") {
+            this.bot.chat("/sell");
+            this.state = "WAIT_WINDOW";
+            return;
+        }
+
+        if (!this.running)
+            return;
+
+        switch (this.state) {
+
+            case "OPEN_MENU":
+
+                console.log("Sending /sell");
+
+                this.bot.chat("/sell");
+
+                this.state = "WAIT_WINDOW";
+
+                break;
+
+            case "WAIT_WINDOW":
+
+                break;
+
+            case "MOVE_ITEMS":
+
+                this.moveItems();
+
+                break;
+
+            case "CLICK_BUTTON":
+
+                this.clickSellButton();
+
+                break;
+
+            // case "WAIT_SELL":
+
+            //     this.waitSell();
+
+        }
+
+    }
+
+    windowOpened(window) {
+
+        console.log("SellManager received window");
+
+        if (!this.running)
+            return;
+
+
+        this.window = window;
+
+        this.state = "MOVE_ITEMS";
+
+        console.log("Moving to MOVE_ITEMS");
+
+    }
+
+    moveItems() {
+
+        const now = Date.now();
+
+        if (now < this.nextClick) {
+            return;
+        }
+
+        if (!this.window)
+            return;
+
+
+        // Count used sell slots
+        let usedSlots = 0;
+
+        for (let i = 0; i <= 44; i++) {
+
+            if (this.window.slots[i]) {
+                usedSlots++;
+            }
+
+        }
+
+
+        // console.log(
+        //     "Sell area:",
+        //     usedSlots,
+        //     "/45"
+        // );
+
+
+        // Sell area full
+        if (usedSlots >= 35) {
+
+            // console.log("Sell area full");
+
+            this.state = "CLICK_BUTTON";
+
+            return;
+
+        }
+
+
+        // Find first inventory item
+        for (let i = 54; i < 90; i++) {
+
+            const window = this.bot.currentWindow;
+
+            if (!window)
+                return;
+
+
+            const item = window.slots[i];
+
+            if (item) {
+
+                // console.log(
+                //     "Moving:",
+                //     item.name,
+                //     "from",
+                //     i
+                // );
+
+
+                this.bot.clickWindow(
+                    i,
+                    0,
+                    1
+                );
+
+                // this.nextClick = Date.now() + 50;
+
+
+                return;
+
+            }
+
+        }
+
+    }
+
+
+    // moveItems() {
+
+    //     if (!this.bot.currentWindow)
+    //         return;
+
+
+    //     console.log("Picking item from slot 55");
+
+
+    //     // Pick up stack from inventory slot 55
+    //     this.bot.clickWindow(
+    //         55,
+    //         0,
+    //         1
+    //     );
+
+    //     this.bot.clickWindow(
+    //         56,
+    //         0,
+    //         1
+    //     );
+    //     this.bot.clickWindow(
+    //         56,
+    //         0,
+    //         1
+    //     );
+
+    //     this.state = "CLICK_BUTTON"
+
+
+    //     console.log("Shift double click slot 56");
+
+
+    // setTimeout(() => {
+
+    //     console.log("Shift double click slot 56");
+
+
+    //     // Shift click
+    //     this.bot.clickWindow(
+    //         56,
+    //         0,
+    //         1
+    //     );
+
+
+    //     setTimeout(() => {
+
+    //         // second click (double click)
+    //         this.bot.clickWindow(
+    //             56,
+    //             0,
+    //             1
+    //         );
+
+
+    //         this.nextClick = Date.now() + 300;
+
+
+    //         // after filling, sell
+    //         this.state = "CLICK_BUTTON";
+
+
+    //     }, 100);
+
+
+    // }, 100);
+
+    // }
+
+
+    clickSellButton() {
+
+        if (!this.window)
+            return;
+
+
+        // console.log("Clicking sell button");
+
+
+        this.bot.clickWindow(
+            53,
+            0,
+            0
+        );
+
+        this.nextClick = Date.now() + 100;
+        // this.state = "WAIT_SELL";
+        this.state = "MOVE_ITEMS";
+
+    }
+
+    waitSell() {
+
+        if (!this.window)
+            return;
+
+
+        // Wait a little for the server to process the sell
+        if (Date.now() < this.nextClick)
+            return;
+
+
+        console.log("Checking sell result");
+
+
+        let hasItems = false;
+
+
+        for (let i = 0; i <= 44; i++) {
+
+            if (this.window.slots[i]) {
+
+                hasItems = true;
+                break;
+
+            }
+
+        }
+
+
+        if (!hasItems) {
+
+            console.log("Sell area empty");
+            console.log(Date.now());
+
+            this.state = "MOVE_ITEMS";
+
+        }
+
+    }
+
 }
 
-// public class SellManager {
-
-// private static final int SELL_START = 0;
-// private static final int SELL_END = 44;
-
-// private static final int SELL_BUTTON = 53;
-
-// private static final int INVENTORY_START = 54;
-// private static final int INVENTORY_END = 89;
-
-// private static boolean selling = false;
-// private static long nextActionTime = 0;
-
-// public static void tick(Minecraft client) {
-
-// if (!(client.screen instanceof ContainerScreen screen))
-// return;
-
-// if (!screen.getTitle().getString().equals("Sell"))
-// return;
-
-// if (client.player == null || client.gameMode == null) {
-// return;
-// }
-
-// boolean sellAreaFull = true;
-// var menu = screen.getMenu();
-
-// for (int i = 0; i <= 44; i++) {
-// if (menu.slots.get(i).getItem().isEmpty()) {
-// sellAreaFull = false;
-// break;
-// }
-// }
-
-// if (!sellAreaFull) {
-
-// for (int i = 54; i <= 89; i++) {
-
-// if (!menu.slots.get(i).getItem().isEmpty()) {
-
-// client.gameMode.handleInventoryMouseClick(
-// menu.containerId,
-// i,
-// 0,
-// ClickType.QUICK_MOVE,
-// client.player);
-
-// return;
-// }
-// }
-
-// } else {
-
-// // sell button
-// client.gameMode.handleInventoryMouseClick(
-// menu.containerId,
-// 53,
-// 0,
-// ClickType.PICKUP,
-// client.player);
-// }
-// }
-// }
+module.exports = SellManager;
