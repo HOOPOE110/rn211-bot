@@ -8,7 +8,9 @@ class ReconnectManager {
 
         this.connectedAt = 0;
 
-        this.reconnectAttempts = 0;
+        this.connectionCount = -1;
+
+        this.reconnectAttempts = -1;
 
         this.maxReconnectAttempts = 5;
 
@@ -23,6 +25,8 @@ class ReconnectManager {
     connected() {
 
         this.connectedAt = Date.now();
+        
+        this.connectionCount++;
 
         console.log("ReconnectManager: Connected");
 
@@ -55,9 +59,11 @@ class ReconnectManager {
 
         }
 
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        if (this.reconnectAttempts >= this.maxReconnectAttempts || this.connectionCount >= this.maxReconnectAttempts) {
 
             console.log("Reconnect limit reached.");
+            console.log("fastreconection:" + this.reconnectAttempts + "time(s)");
+            console.log("disconnected:" + this.connectionCount + "time(s)");
 
             this.enabled = false;
 

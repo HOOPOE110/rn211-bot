@@ -50,7 +50,7 @@ class Bot {
 
         this.consoleManager = new ConsoleManager(this.bot);
 
-        this.reconnectManager = new ReconnectManager(this.bot);
+        this.reconnectManager = new ReconnectManager(this);
 
         this.registerEvents();
 
@@ -91,8 +91,8 @@ class Bot {
         });
 
         this.bot.on("end", () => {
-            this.reconnectManager.disconnected();
             console.log("Disconnected.");
+            this.reconnectManager.disconnected();
         });
 
 
