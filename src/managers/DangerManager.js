@@ -21,7 +21,7 @@ class DangerManager {
         for (const username in this.bot.players) {
 
 
-            if (username === this.bot.username || username === "Green_ash")
+            if (username === this.bot.username || username === "Green_ash" || username === "itz_Godhere")
                 continue;
 
 

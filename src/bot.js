@@ -6,6 +6,7 @@ const SellManager = require("./managers/SellManager");
 const ConsoleManager = require("./managers/ConsoleManager");
 const DangerManager = require("./managers/DangerManager");
 const PositionManager = require("./managers/PositionManager");
+const ReconnectManager = require("./managers/ReconnectManager");
 
 const mineflayer = require("mineflayer");
 const config = require("./config");
@@ -49,15 +50,20 @@ class Bot {
 
         this.consoleManager = new ConsoleManager(this.bot);
 
+        this.reconnectManager = new ReconnectManager(this.bot);
+
         this.registerEvents();
 
         setInterval(() => {
+
 
             this.positionManager.tick();
 
             this.dangerManager.tick();
 
             this.sellManager.tick();
+
+            // this.reconnectManager.tick();
 
 
         }, 50);
@@ -80,12 +86,14 @@ class Bot {
 
         this.bot.on("error", console.log);
 
-        this.bot.on("end", () => {
-
-            console.log("Disconnected");
-
+        this.bot.once("login", () => {
+            this.reconnectManager.connected();
         });
 
+        this.bot.on("end", () => {
+            this.reconnectManager.disconnected();
+            console.log("Disconnected.");
+        });
 
 
 
